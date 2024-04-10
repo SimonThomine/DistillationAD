@@ -28,12 +28,17 @@ This file allows configuring the main elements of the project.
 - `obj` (STR): The object category
 - `phase` (STR): Either train or test
 - `save_path` (STR): The path to save the model weights
-- `training_data`(YAML LIST) : To configure hyperparameters (epochs, batch_size, img_size and crop_size)
+- `training_data`(YAML LIST) : To configure hyperparameters (epochs, batch_size, img_size, crop_size and norm)
 
 ### Training and testing
 Once configured, just do the following command to train or test (depending of configuration file)
 ```
 python3 trainNet.py
+```
+
+You can also visualize the feature map of a given layer, you may change the selected layer within the python file
+```
+python3 visualization.py
 ```
 
 # Implemented methods

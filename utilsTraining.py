@@ -25,6 +25,7 @@ def getParams(trainer,data,device):
     trainer.modelName = data['backbone']
     trainer.outIndices = data['out_indice']
     trainer.distillType=data['distillType']
+    trainer.norm = data['TrainingData']['norm']
     
     
 def loadWeights(model,model_dir,alias):
@@ -111,19 +112,15 @@ def computeAUROC(scores,gt_list,obj,name="base"):
     return img_roc_auc,img_scores  
 
 # TODO param norm
-def cal_importance(ft, fs):
+def cal_importance(ft, fs,norm):
 
-    fs_norm = F.normalize(fs, p=2)
-    ft_norm = F.normalize(ft, p=2)
-    # fs_norm = fs
-    # ft_norm = ft
+    fs_norm = F.normalize(fs, p=2) if norm else fs
+    ft_norm = F.normalize(ft, p=2) if norm else ft
 
     f_loss = 0.5 * (ft_norm - fs_norm) ** 2
 
     sumOverAxes=torch.sum(f_loss,dim=[1,2])
     sortedIndex=torch.argsort(sumOverAxes,descending=True)
-    # ft_norm = [ft_norm[i] for i in sortedIndex]
-    # fs_norm=[fs_norm[i] for i in sortedIndex]
     ft_norm = ft_norm[sortedIndex]
     fs_norm = fs_norm[sortedIndex]
     

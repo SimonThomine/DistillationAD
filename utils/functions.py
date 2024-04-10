@@ -2,15 +2,15 @@ import torch
 import torch.nn.functional as F
 from scipy.ndimage import gaussian_filter
 
-def cal_loss(fs_list, ft_list):
+def cal_loss(fs_list, ft_list,norm):
     t_loss = 0
     N = len(fs_list)
     for i in range(N):
         fs = fs_list[i]
         ft = ft_list[i]
         _, _, h, w = fs.shape
-        fs_norm = F.normalize(fs, p=2)
-        ft_norm = F.normalize(ft, p=2)
+        fs_norm = F.normalize(fs, p=2) if norm else fs
+        ft_norm = F.normalize(ft, p=2) if norm else ft
  
         f_loss = 0.5 * (ft_norm - fs_norm) ** 2
         f_loss = f_loss.sum() / (h * w)
@@ -20,13 +20,13 @@ def cal_loss(fs_list, ft_list):
 
 
 @torch.no_grad()
-def cal_anomaly_maps(fs_list, ft_list, out_size):
+def cal_anomaly_maps(fs_list, ft_list, out_size,norm):
     anomaly_map = 0
     for i in range(len(ft_list)):
         fs = fs_list[i]
         ft = ft_list[i]
-        fs_norm = F.normalize(fs, p=2)
-        ft_norm = F.normalize(ft, p=2)
+        fs_norm = F.normalize(fs, p=2) if norm else fs
+        ft_norm = F.normalize(ft, p=2) if norm else ft
 
         _, _, h, w = fs.shape
 

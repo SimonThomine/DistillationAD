@@ -47,7 +47,7 @@ class NetTrainer:
                 with torch.set_grad_enabled(True):
 
                     features_s,features_t  = infer(self,image) 
-                    loss=cal_loss(features_s, features_t)
+                    loss=cal_loss(features_s, features_t,trainer.norm)
                     losses.update(loss.sum().item(), image.size(0))
                     loss.backward()
                     self.optimizer.step()
@@ -78,7 +78,7 @@ class NetTrainer:
                 
                 features_s,features_t  = infer(self,image)  
 
-                loss=cal_loss(features_s, features_t)
+                loss=cal_loss(features_s, features_t,trainer.norm)
                 
                 losses.update(loss.item(), image.size(0))
         epoch_bar.set_postfix({"Loss": loss.item()})
@@ -118,7 +118,7 @@ class NetTrainer:
                 
                 features_s, features_t = infer(self,image)   
                 
-                score =cal_anomaly_maps(features_s,features_t,self.img_cropsize) 
+                score =cal_anomaly_maps(features_s,features_t,self.img_cropsize,trainer.norm) 
                 
                 progressBar.update()
                 

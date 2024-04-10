@@ -1,5 +1,5 @@
 data_path: "../../datasets/MVTEC"
-distillType: rd # rd,ead, st
+distillType: st # rd,ead, st
 backbone: resnet18 # any cnn model for, any resnet or wide resnet for rd, medium or small for ead
 out_indice: [2,3] # for st
 obj: wood
@@ -11,3 +11,4 @@ TrainingData:
   lr: 0.0004
   img_size: 224
   crop_size: 224
+  norm: True # normalize features before loss calculation

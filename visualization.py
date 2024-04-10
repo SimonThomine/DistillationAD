@@ -28,7 +28,7 @@ def visualize(trainer,layer=0,importanceSort=True,featuresToShow=1000):
     for sample in test_loader:
         label=sample['has_anomaly']
         image = sample['imageBase'].to(trainer.device)
-        imagecpu = denormalization(image.cpu().squeeze().numpy()) # TODO pour la norm
+        imagecpu = denormalization(image.cpu().squeeze().numpy())
         test_imgs.extend(imagecpu)
         with torch.set_grad_enabled(False):
             features_s, features_t = infer(trainer,image)
@@ -40,7 +40,7 @@ def visualize(trainer,layer=0,importanceSort=True,featuresToShow=1000):
             fs = features_s[layer].cpu().squeeze()
                 
             if importanceSort:
-                ft,fs=cal_importance(ft, fs) 
+                ft,fs=cal_importance(ft, fs,trainer.norm) 
 
             plt.imshow(imagecpu)
             plt.axis('off')
