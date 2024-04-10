@@ -1,0 +1,7 @@
+numpy==1.26.4
+opencv-python==4.9.0.80
+scikit-learn==1.4.0
+timm==0.9.12
+torch==2.2.0
+torchvision==0.17.0
+tqdm==4.66.2
