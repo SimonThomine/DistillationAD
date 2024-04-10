@@ -90,6 +90,8 @@ class NetTrainer:
         torch.save(state, os.path.join(self.model_dir, "student.pth"))
 
 
+
+    
     @torch.no_grad()
     def test(self):
 
@@ -135,13 +137,13 @@ class NetTrainer:
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     data=readYamlConfig("config.yaml")
-    distill = NetTrainer(data,device)
+    trainer = NetTrainer(data,device)
      
     if data['phase'] == "train":
-        distill.train()
-        distill.test()
+        trainer.train()
+        trainer.test()
     elif data['phase'] == "test":
-        distill.test()
+        trainer.test()
     else:
         print("Phase argument must be train or test.")
 

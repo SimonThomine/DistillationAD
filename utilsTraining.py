@@ -1,5 +1,6 @@
 import os
 import torch
+import torch.nn.functional as F
 from sklearn.metrics import roc_auc_score
 from models.teacher import teacherTimm
 from models.StudentTeacher.student  import studentTimm
@@ -18,8 +19,9 @@ def getParams(trainer,data,device):
     trainer.num_epochs = data['TrainingData']['epochs']
     trainer.lr = data['TrainingData']['lr']
     trainer.batch_size = data['TrainingData']['batch_size']   
-    trainer.model_dir = data['save_path'] + "/models" + "/" + trainer.obj  
-    trainer.img_dir = data['save_path'] + "/imgs" + "/" + trainer.obj 
+    trainer.save_path = data['save_path']
+    trainer.model_dir = trainer.save_path+ "/models" + "/" + trainer.obj  
+    trainer.img_dir = trainer.save_path+ "/imgs" + "/" + trainer.obj 
     trainer.modelName = data['backbone']
     trainer.outIndices = data['out_indice']
     trainer.distillType=data['distillType']
@@ -96,7 +98,6 @@ def infer(trainer, img):
         features_t = trainer.teacher(img)
         embed=trainer.bn(features_t)
         features_s=trainer.student(embed)
-    #print("Teacher features shape: ",features_t.shape)
     return features_s,features_t
 
 
@@ -108,3 +109,22 @@ def computeAUROC(scores,gt_list,obj,name="base"):
     img_roc_auc = roc_auc_score(gt_list, img_scores)
     print(obj + " image"+str(name)+" ROCAUC: %.3f" % (img_roc_auc))
     return img_roc_auc,img_scores  
+
+# TODO param norm
+def cal_importance(ft, fs):
+
+    fs_norm = F.normalize(fs, p=2)
+    ft_norm = F.normalize(ft, p=2)
+    # fs_norm = fs
+    # ft_norm = ft
+
+    f_loss = 0.5 * (ft_norm - fs_norm) ** 2
+
+    sumOverAxes=torch.sum(f_loss,dim=[1,2])
+    sortedIndex=torch.argsort(sumOverAxes,descending=True)
+    # ft_norm = [ft_norm[i] for i in sortedIndex]
+    # fs_norm=[fs_norm[i] for i in sortedIndex]
+    ft_norm = ft_norm[sortedIndex]
+    fs_norm = fs_norm[sortedIndex]
+    
+    return ft_norm,fs_norm

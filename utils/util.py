@@ -57,3 +57,9 @@ def set_seed(seed_value=42):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     
+def denormalization(x):
+    mean = np.array([0.485, 0.456, 0.406])
+    std = np.array([0.229, 0.224, 0.225])
+    x = (((x.transpose(1, 2, 0) * std) + mean) * 255.0).astype(np.uint8) # was transpose
+
+    return x
