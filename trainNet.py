@@ -25,6 +25,8 @@ class NetTrainer:
         
         if self.distillType=="rd":
             self.optimizer = torch.optim.Adam(list(self.student.parameters())+list(self.bn.parameters()), lr=self.lr, betas=(0.5, 0.999)) 
+        elif self.distillType=="mixed" :
+            self.optimizer = torch.optim.Adam(list(self.student.parameters())+list(self.student2.parameters()), lr=self.lr, betas=(0.5, 0.999))
         else:
             self.optimizer = torch.optim.Adam(self.student.parameters(), lr=self.lr, betas=(0.5, 0.999)) 
         
@@ -88,14 +90,23 @@ class NetTrainer:
     def save_checkpoint(self):
         state = {"model": self.student.state_dict()}
         torch.save(state, os.path.join(self.model_dir, "student.pth"))
-
-
+        if self.distillType=="rd":
+            state = {"model": self.bn.state_dict()}
+            torch.save(state, os.path.join(self.model_dir, "bn.pth"))
+        if self.distillType=="mixed":
+            state = {"model": self.student2.state_dict()}
+            torch.save(state, os.path.join(self.model_dir, "student2.pth"))
 
     
     @torch.no_grad()
     def test(self):
 
         self.student=loadWeights(self.student,self.model_dir,"student.pth")
+        if self.distillType=="rd":
+            self.bn=loadWeights(self.bn,self.model_dir,"bn.pth")
+        if self.distillType=="mixed":
+            self.student2=loadWeights(self.student2,self.model_dir,"student2.pth")
+        
         
         kwargs = ({"num_workers": 1, "pin_memory": True} if torch.cuda.is_available() else {} )
         test_dataset = MVTecDataset(

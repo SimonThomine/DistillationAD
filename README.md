@@ -22,13 +22,15 @@ To use the project, you must configure the config.yaml file
 This file allows configuring the main elements of the project.
 
 - `data_path` (STR): The path to the dataset
-- `distillType` (STR): The type of distillation : st for STPM, rd for reverse distillation, ead for EfficientAD, dbfad for distillation-based fabric anomaly detection
+- `distillType` (STR): The type of distillation : st for STPM, rd for reverse distillation, ead for EfficientAD, dbfad for distillation-based fabric anomaly detection, mixed for mixedTeacher
 - `backbone` (STR): The name of the model backbone (any CNN for st, only resnets and wide resnets for rd, small or medium for ead)
 - `out_indice` (LIST OF INT): The index of the layer used for distillation (only for st)
 - `obj` (STR): The object category
 - `phase` (STR): Either train or test
 - `save_path` (STR): The path to save the model weights
 - `training_data`(YAML LIST) : To configure hyperparameters (epochs, batch_size, img_size, crop_size and norm)
+
+An example of config for each distillType is accessible in `configs/`
 
 ### Training and testing
 Once configured, just do the following command to train or test (depending of configuration file)
@@ -71,6 +73,12 @@ python3 visualization.py
   <img width="700" height="350" src="images/DistillBased.png">
 </p>
 
+## MixedTeacher : Knowledge Distillation for fast inference textural anomaly detection 
+[Article](https://arxiv.org/pdf/2306.09859.pdf) 
+[Code inspiration](https://github.com/SimonThomine/MixedTeacher)
+<p align="left">
+  <img width="700" height="400" src="images/DualModel.png">
+</p>
 
 # Implemented tools
 

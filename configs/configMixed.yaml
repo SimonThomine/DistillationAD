@@ -1,0 +1,14 @@
+data_path: "../../datasets/MVTEC"
+distillType: mixed 
+backbone: [resnet18, efficientnet_b0] # list of 2 models cnn 
+out_indice: [[2,3],[4]] # list of 2 list of int
+obj: wood
+phase: train
+save_path: "./results"
+TrainingData:
+  epochs: 50
+  batch_size: 8
+  lr: 0.0004
+  img_size: 224
+  crop_size: 224
+  norm: True # normalize features before loss calculation

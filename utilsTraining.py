@@ -50,12 +50,16 @@ def loadTeacher(trainer):
         loadBottleNeckRD(trainer)
     elif (trainer.distillType=="dbfad"):
         trainer.teacher=teacherTimm(backbone_name="resnet34",out_indices=[0,1,2,3]).to(trainer.device)
+    elif (trainer.distillType=="mixed"):
+        trainer.teacher=teacherTimm(backbone_name=trainer.modelName[0],out_indices=trainer.outIndices[0]).to(trainer.device)
+        trainer.teacher2=teacherTimm(backbone_name=trainer.modelName[1],out_indices=trainer.outIndices[1]).to(trainer.device)
+        trainer.teacher2.eval()
+        for param in trainer.teacher2.parameters():
+            param.requires_grad = False
     else:
         raise Exception("Invalid distillation type :  Choices are ['st', 'ead','rd', 'dbfad']")
     
     # load bottleneck rd
-        
-        
     trainer.teacher.eval()
     for param in trainer.teacher.parameters():
         param.requires_grad = False
@@ -76,6 +80,10 @@ def loadModels(trainer):
     if (trainer.distillType=="dbfad"):
         loadTeacher(trainer)
         trainer.student=reverse_student18().to(trainer.device)
+    if (trainer.distillType=="mixed"):
+        loadTeacher(trainer)
+        trainer.student=studentTimm(backbone_name=trainer.modelName[0],out_indices=trainer.outIndices[0]).to(trainer.device)
+        trainer.student2=studentTimm(backbone_name=trainer.modelName[1],out_indices=trainer.outIndices[1]).to(trainer.device)
     
 def loadDataset(trainer):
     kwargs = ({"num_workers": 8, "pin_memory": True} if torch.cuda.is_available() else {})
@@ -109,6 +117,13 @@ def infer(trainer, img):
         features_t = trainer.teacher(img)
         features_t = [F.max_pool2d(features_t[0],kernel_size=3,stride=2,padding=1),features_t[1],features_t[2],features_t[3]]
         features_s=trainer.student(features_t)
+    if (trainer.distillType=="mixed"):
+        features_t = trainer.teacher(img)
+        features_t2 = trainer.teacher2(img)
+        features_s=trainer.student(img)
+        features_s2=trainer.student2(img) 
+        features_s=list(features_s)+list(features_s2)
+        features_t=list(features_t)+list(features_t2)
     return features_s,features_t
 
 
