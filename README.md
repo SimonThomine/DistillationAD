@@ -22,7 +22,7 @@ To use the project, you must configure the config.yaml file
 This file allows configuring the main elements of the project.
 
 - `data_path` (STR): The path to the dataset
-- `distillType` (STR): The type of distillation : st for STPM, rd for reverse distillation, ead for EfficientAD
+- `distillType` (STR): The type of distillation : st for STPM, rd for reverse distillation, ead for EfficientAD, dbfad for distillation-based fabric anomaly detection
 - `backbone` (STR): The name of the model backbone (any CNN for st, only resnets and wide resnets for rd, small or medium for ead)
 - `out_indice` (LIST OF INT): The index of the layer used for distillation (only for st)
 - `obj` (STR): The object category
@@ -57,11 +57,28 @@ python3 visualization.py
   <img width="700" height="350" src="images/RD.png">
 </p>
 
-## EfficientAD: Accurate Visual Anomaly Detection at Millisecond-Level Latencies
+## EfficientAD : Accurate Visual Anomaly Detection at Millisecond-Level Latencies
 [Article](https://arxiv.org/pdf/2303.14535.pdf)  
 [Code inspiration](https://github.com/nelson1425/EfficientAD)
 <p align="left">
   <img width="700" height="200" src="images/EAD.png">
+</p>
+
+## DBFAD : Distillation-based fabric anomaly detection
+[Article](https://arxiv.org/pdf/2401.02287.pdf)  
+[Code inspiration](https://github.com/SimonThomine/DBFAD)
+<p align="left">
+  <img width="700" height="350" src="images/DistillBased.png">
+</p>
+
+
+# Implemented tools
+
+## SSPCAB : Self-Supervised Predictive Convolutional Attentive Block for Anomaly Detection
+[Article](https://arxiv.org/pdf/2111.09099.pdf)  
+[Code inspiration](https://github.com/ristea/sspcab)
+<p align="left">
+  <img width="700" height="350" src="images/SSPCAB.png">
 </p>
 
 ## License

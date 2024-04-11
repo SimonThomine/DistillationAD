@@ -5,7 +5,7 @@ from models.ReverseDistillation.de_resnet import (
 
 from models.ReverseDistillation.bn import (BN_layer, AttnBasicBlock, AttnBottleneck)
 
-def loadStudent(trainer):
+def loadStudentRD(trainer):
     if trainer.modelName=="resnet18":
         trainer.student = de_resnet18().to(trainer.device)
     elif trainer.modelName=="resnet34":
@@ -22,7 +22,7 @@ def loadStudent(trainer):
         trainer.student = de_wide_resnet101_2().to(trainer.device)
 
 
-def loadBottleNeck(trainer):
+def loadBottleNeckRD(trainer):
     if trainer.modelName=="resnet18":
         trainer.bn=BN_layer(AttnBasicBlock, 2).to(trainer.device)
     elif trainer.modelName=="resnet34":

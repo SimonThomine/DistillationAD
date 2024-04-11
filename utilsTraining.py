@@ -7,7 +7,8 @@ from models.StudentTeacher.student  import studentTimm
 from datasets.mvtec import MVTecDataset
 from models.EfficientAD.efficientAD import loadPdnTeacher
 from models.EfficientAD.common import get_pdn_medium,get_pdn_small
-from models.ReverseDistillation.rd import loadBottleNeck, loadStudent
+from models.ReverseDistillation.rd import loadBottleNeckRD, loadStudentRD
+from models.DBFAD.reverseResidual import reverse_student18
 
 def getParams(trainer,data,device):
     trainer.device = device
@@ -46,9 +47,11 @@ def loadTeacher(trainer):
         loadPdnTeacher(trainer)
     elif (trainer.distillType=="rd"):
         trainer.teacher=teacherTimm(backbone_name=trainer.modelName,out_indices=[1,2,3]).to(trainer.device)
-        loadBottleNeck(trainer)
+        loadBottleNeckRD(trainer)
+    elif (trainer.distillType=="dbfad"):
+        trainer.teacher=teacherTimm(backbone_name="resnet34",out_indices=[0,1,2,3]).to(trainer.device)
     else:
-        raise Exception("Invalid distillation type :  Choices are ['st', 'eadSmall', 'eadMedium','rd']")
+        raise Exception("Invalid distillation type :  Choices are ['st', 'ead','rd', 'dbfad']")
     
     # load bottleneck rd
         
@@ -69,7 +72,10 @@ def loadModels(trainer):
             trainer.student = get_pdn_medium().to(trainer.device) # 768 if autoencoder
     if (trainer.distillType=="rd"):
         loadTeacher(trainer)
-        loadStudent(trainer)
+        loadStudentRD(trainer)
+    if (trainer.distillType=="dbfad"):
+        loadTeacher(trainer)
+        trainer.student=reverse_student18().to(trainer.device)
     
 def loadDataset(trainer):
     kwargs = ({"num_workers": 8, "pin_memory": True} if torch.cuda.is_available() else {})
@@ -99,6 +105,10 @@ def infer(trainer, img):
         features_t = trainer.teacher(img)
         embed=trainer.bn(features_t)
         features_s=trainer.student(embed)
+    if (trainer.distillType=="dbfad"):
+        features_t = trainer.teacher(img)
+        features_t = [F.max_pool2d(features_t[0],kernel_size=3,stride=2,padding=1),features_t[1],features_t[2],features_t[3]]
+        features_s=trainer.student(features_t)
     return features_s,features_t
 
 
@@ -111,7 +121,6 @@ def computeAUROC(scores,gt_list,obj,name="base"):
     print(obj + " image"+str(name)+" ROCAUC: %.3f" % (img_roc_auc))
     return img_roc_auc,img_scores  
 
-# TODO param norm
 def cal_importance(ft, fs,norm):
 
     fs_norm = F.normalize(fs, p=2) if norm else fs
