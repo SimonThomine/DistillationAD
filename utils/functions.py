@@ -44,3 +44,53 @@ def cal_anomaly_maps(fs_list, ft_list, out_size,norm):
 
     return anomaly_map
 
+#! For EfficientAD
+def cal_loss_quantile(fs_list, ft_list,norm):
+    t_loss = 0
+    N = len(fs_list)
+    for i in range(N):
+        fs = fs_list[i]
+        ft = ft_list[i]
+        _, _, h, w = fs.shape
+        fs_norm = F.normalize(fs, p=2) if norm else fs
+        ft_norm = F.normalize(ft, p=2) if norm else ft
+ 
+        f_loss = 0.5 * (ft_norm - fs_norm) ** 2
+        d_hard = torch.quantile(f_loss, q=0.999)
+        f_loss = torch.mean(f_loss[f_loss >= d_hard])
+        
+        f_loss = f_loss.sum() / (h * w)
+        t_loss += f_loss
+
+    return t_loss / N
+
+
+#! For Remembering Normality
+def cal_loss_cosine(fs_list, ft_list,norm):
+    t_loss = 0
+    N = len(fs_list)
+    for i in range(N):
+        fs = fs_list[i]
+        ft = ft_list[i]
+        _, _, h, w = fs.shape
+        fs_norm = F.normalize(fs, p=2) if norm else fs
+        ft_norm = F.normalize(ft, p=2) if norm else ft
+        f_loss = 1 - F.cosine_similarity(fs_norm, ft_norm)
+        t_loss += f_loss.sum()/ (h * w)
+    return t_loss / N
+
+
+def cal_loss_orth(student,rd=False):
+    if rd:
+        keys=[student.memory0.keys,student.memory1.keys,student.memory2.keys]
+        values=[student.memory0.values,student.memory1.values,student.memory2.values]
+    else:
+        keys=[student.memory1.keys,student.memory2.keys]
+        values=[student.memory1.values,student.memory2.values]
+    t_loss=0
+    for key,value in zip(keys,values):
+        key_norm = torch.nn.functional.normalize(key, dim=1)
+        value_norm = torch.nn.functional.normalize(value, dim=1)
+        cos_sim = torch.mm(key_norm, value_norm.T) 
+        t_loss += cos_sim.sum()/key.size(0)**2
+    return t_loss

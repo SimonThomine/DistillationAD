@@ -1,7 +1,7 @@
 data_path: "../../datasets/MVTEC"
-distillType: rnst # rd,ead, st, rnst
-backbone: resnet18 # any cnn model for, any resnet or wide resnet for rd, medium or small for ead
-out_indice: [2,3] # for st
+distillType: rnst # or rnrd (st for forward and rd for backward)
+backbone: resnet18 # any resnet model
+out_indice: [2,3] # unused for RM
 obj: wood
 phase: train
 save_path: "./results"
@@ -12,7 +12,7 @@ TrainingData:
   img_size: 224
   crop_size: 224
   norm: True # normalize features before loss calculation
-
+  
   # Specific to RM
   embedDim: 50 # L in paper
   lambda1: 0.1

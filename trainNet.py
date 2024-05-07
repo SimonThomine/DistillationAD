@@ -8,8 +8,11 @@ from utils.util import  AverageMeter,readYamlConfig,set_seed
 from utils.functions import (
     cal_loss,
     cal_anomaly_maps,
+    cal_loss_cosine,
+    cal_loss_quantile,
+    cal_loss_orth
 )
-from utilsTraining import getParams,loadWeights,loadModels,loadDataset,infer,computeAUROC
+from utilsTraining import getParams,loadWeights,loadModels,loadDataset,infer,computeAUROC,computeLoss
 
 class NetTrainer:          
     def __init__(self, data,device):  
@@ -43,19 +46,40 @@ class NetTrainer:
         
         for _ in range(1, self.num_epochs + 1):
             losses = AverageMeter()
+            
+            if self.distillType.startswith("rn"):
+                data_iter = iter(self.train_loader)
+            
             for sample in self.train_loader:
                 image = sample['imageBase'].to(self.device)
+                
+                if self.distillType.startswith("rn"):
+                    try:
+                        sample_next = next(data_iter)
+                    except StopIteration:
+                        data_iter = iter(self.train_loader)
+                        sample_next = next(data_iter)
+                    
+                    imageExamplar = sample_next["imageBase"].to(self.device)
+                    
                 self.optimizer.zero_grad()
                 with torch.set_grad_enabled(True):
-
-                    features_s,features_t  = infer(self,image) 
-                    loss=cal_loss(features_s, features_t,trainer.norm)
+                    if self.distillType.startswith("rn"):
+                        features_s,features_t,features_t_examplar,features_t_examplar_norm  = infer(self,image,imageExamplar)
+                        loss=computeLoss(self,features_s,features_t,features_t_examplar,features_t_examplar_norm)
+                    else:
+                        features_s,features_t  = infer(self,image) 
+                        loss=computeLoss(self,features_s,features_t)
+                    
                     losses.update(loss.sum().item(), image.size(0))
                     loss.backward()
                     self.optimizer.step()
                     self.scheduler.step()
+                    
+                    
                 epoch_bar.set_postfix({"Loss": loss.item()})
                 epoch_bar.update()
+                        
             
             val_loss = self.val(epoch_bar)
             if best_score is None:
@@ -74,13 +98,26 @@ class NetTrainer:
     def val(self, epoch_bar):
         self.student.eval()
         losses = AverageMeter()
+        if self.distillType.startswith("rn"):
+                data_iter = iter(self.val_loader)
         for sample in self.val_loader: 
             image = sample['imageBase'].to(self.device)
+            if self.distillType.startswith("rn"):
+                try:
+                    sample_next = next(data_iter)
+                except StopIteration:
+                    data_iter = iter(self.train_loader)
+                    sample_next = next(data_iter)
+                    
+                imageExamplar = sample_next["imageBase"].to(self.device)
             with torch.set_grad_enabled(False):
                 
-                features_s,features_t  = infer(self,image)  
-
-                loss=cal_loss(features_s, features_t,trainer.norm)
+                if self.distillType.startswith("rn"):
+                    features_s,features_t,features_t_examplar,features_t_examplar_norm  = infer(self,image,imageExamplar)
+                    loss=computeLoss(self,features_s,features_t,features_t_examplar,features_t_examplar_norm)
+                else:
+                    features_s,features_t  = infer(self,image) 
+                    loss=computeLoss(self,features_s,features_t)
                 
                 losses.update(loss.item(), image.size(0))
         epoch_bar.set_postfix({"Loss": loss.item()})
@@ -127,7 +164,7 @@ class NetTrainer:
             gt_list.extend(label.cpu().numpy())
             with torch.set_grad_enabled(False):
                 
-                features_s, features_t = infer(self,image)   
+                features_s, features_t = infer(self,image,test=True)   
                 
                 score =cal_anomaly_maps(features_s,features_t,self.img_cropsize,trainer.norm) 
                 
@@ -142,6 +179,7 @@ class NetTrainer:
         
         
         return img_roc_auc
+    
     
 
 
