@@ -31,7 +31,7 @@ def visualize(trainer,layer=0,importanceSort=True,featuresToShow=1000):
         imagecpu = denormalization(image.cpu().squeeze().numpy())
         test_imgs.extend(imagecpu)
         with torch.set_grad_enabled(False):
-            features_s, features_t = infer(trainer,image)
+            features_s, features_t = infer(trainer,image,test=True)
 
             if len(features_s) <= layer:
                 print("Layer index out of range, taking 0 as default index")

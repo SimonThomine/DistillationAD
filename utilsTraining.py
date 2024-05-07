@@ -18,7 +18,8 @@ from models.ReverseDistillation.rd import loadBottleNeckRD, loadStudentRD
 from models.DBFAD.reverseResidual import reverse_student18
 from models.RememberingNormality.ST.resnetRM import resnetMemory
 from models.RememberingNormality.ST.teacherST import resnetTeacherST
-
+from models.RememberingNormality.RD.de_resnetRM import de_resnetMemory
+from models.RememberingNormality.RD.teacherRD import resnetTeacherRD
 
 
 def getParams(trainer,data,device):
@@ -39,8 +40,7 @@ def getParams(trainer,data,device):
     trainer.distillType=data['distillType']
     trainer.norm = data['TrainingData']['norm']
     
-    # For remembering normality
-    if trainer.distillType=="rnst":
+    if trainer.distillType.startswith('rn'):
         trainer.embedDim = data['TrainingData']['embedDim']
         trainer.lambda1 = data['TrainingData']['lambda1']
         trainer.lambda2 = data['TrainingData']['lambda1']
@@ -73,14 +73,15 @@ def loadTeacher(trainer):
         trainer.teacher2.eval()
         for param in trainer.teacher2.parameters():
             param.requires_grad = False
-    #! NEW
     elif (trainer.distillType=="rnst"):
         trainer.teacher=resnetTeacherST(backbone_name=trainer.modelName).to(trainer.device)
-    # TODO RD
+    elif (trainer.distillType=="rnrd"):
+        trainer.teacher,trainer.bn=resnetTeacherRD(backbone_name=trainer.modelName)
+        trainer.teacher=trainer.teacher.to(trainer.device)
+        trainer.bn=trainer.bn.to(trainer.device)
     else:
-        raise Exception("Invalid distillation type :  Choices are ['st', 'ead','rd', 'dbfad','rnst']")
+        raise Exception("Invalid distillation type :  Choices are ['st', 'ead','rd', 'dbfad','rnst','rnrd]")
     
-    # load bottleneck rd
     trainer.teacher.eval()
     for param in trainer.teacher.parameters():
         param.requires_grad = False
@@ -105,11 +106,12 @@ def loadModels(trainer):
         loadTeacher(trainer)
         trainer.student=studentTimm(backbone_name=trainer.modelName[0],out_indices=trainer.outIndices[0]).to(trainer.device)
         trainer.student2=studentTimm(backbone_name=trainer.modelName[1],out_indices=trainer.outIndices[1]).to(trainer.device)
-    #! NEW
     if (trainer.distillType=="rnst"):
         loadTeacher(trainer)
-        trainer.student=resnetMemory(backbone_name=trainer.modelName).to(trainer.device)
-    
+        trainer.student=resnetMemory(backbone_name=trainer.modelName,embedDim=trainer.embedDim).to(trainer.device)
+    if (trainer.distillType=="rnrd"):
+        loadTeacher(trainer)
+        trainer.student=de_resnetMemory(backbone_name=trainer.modelName,embedDim=trainer.embedDim).to(trainer.device)
     
 def loadDataset(trainer):
     kwargs = ({"num_workers": 8, "pin_memory": True} if torch.cuda.is_available() else {})
@@ -126,11 +128,6 @@ def loadDataset(trainer):
     )
     trainer.train_loader=torch.utils.data.DataLoader(train_data, batch_size=trainer.batch_size, shuffle=True, **kwargs)
     trainer.val_loader=torch.utils.data.DataLoader(val_data, batch_size=8, shuffle=False, **kwargs)
-    
-    # # ! NEW, for cycling 
-    # if (trainer.distillType=="rnst"):
-    #     trainer.train_loader = cycle(trainer.train_loader)
-    #     trainer.val_loader = cycle(trainer.val_loader)
     
     
 def infer(trainer, img,imgExamplar=None,test=False):
@@ -156,25 +153,41 @@ def infer(trainer, img,imgExamplar=None,test=False):
         features_s=list(features_s)+list(features_s2)
         features_t=list(features_t)+list(features_t2)
         
-    #! NEW
     if (trainer.distillType=="rnst"):  
-        #? Expe
         if (not test):
             features_t_examplar = trainer.teacher.forward_normality_embedding(imgExamplar)
             features_t_examplar = [features_t_examplar[1],features_t_examplar[2]]
             features_t_examplar_norm=[trainer.student.memory1(features_t_examplar[0]),
                                     trainer.student.memory2(features_t_examplar[1])]
             
-            features_tBase = trainer.teacher(img)
-            features_sBase=trainer.student(img)
+            features_t = trainer.teacher(img)
+            features_s=trainer.student(img)
             
-            return features_sBase,features_tBase,features_t_examplar,features_t_examplar_norm
-            # features_t = list(features_tBase) + list(features_t_examplar)
-            # features_s = list(features_sBase) + list(features_t_examplar_norm)
+            return features_s,features_t,features_t_examplar,features_t_examplar_norm
         else : 
             features_t = trainer.teacher(img)
             features_s=trainer.student(img)
+    if (trainer.distillType=="rnrd"):  
+        if (not test):
+            features_t_examplar = trainer.teacher(imgExamplar)
+            features_t_examplar = [features_t_examplar[1],features_t_examplar[2],features_t_examplar[3]]
+            
+            features_t_examplar_norm=[trainer.student.memory2(features_t_examplar[0]),
+                                    trainer.student.memory1(features_t_examplar[1]),
+                                    trainer.student.memory0(features_t_examplar[2])]
 
+            
+            features_t = trainer.teacher(img)
+            features_t= [features_t[0],features_t[1],features_t[2]]
+            embed=trainer.bn(features_t)
+            features_s=trainer.student(embed)
+            
+            return features_s,features_t,features_t_examplar,features_t_examplar_norm
+        else : 
+            features_t = trainer.teacher(img)
+            features_t= [features_t[0],features_t[1],features_t[2]]
+            embed=trainer.bn(features_t)
+            features_s=trainer.student(embed)
     return features_s,features_t
 
 
