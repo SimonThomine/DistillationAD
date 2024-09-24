@@ -1,0 +1,10 @@
+results/*
+**/__pycache__
+venv/*
+featureVisu/*
+.vscode/*
+trained_models/*
+pretrain_models/*
+test.py
+results.xlsx
+.~lock*

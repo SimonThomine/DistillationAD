@@ -17,7 +17,7 @@ class memoryModule(nn.Module):
         b,c,h,w=x.size()
         x=x.view(x.size(0),x.size(1),-1).permute(0,2,1)
         
-        if (normality==False):
+        if not normality:#if (normality==False):
             # The softmax is computed with the keys
             keysAct = self.keys.unsqueeze(0).expand(x.size(0), -1, -1)
             norm_keys = F.normalize(keysAct, p=2, dim=2)
@@ -38,33 +38,5 @@ class memoryModule(nn.Module):
             
         return Fr
     
-
-
-
-
-
-#! Memory module test
-# L=50 # was 50
-# softmax = nn.Softmax(dim=1)
-# x = torch.randn(16,128,32,32)
-# b,c,h,w=x.size()
-# keys = torch.randn(L, 128) 
-# values=torch.randn(L,128)
-# x=x.view(x.size(0),x.size(1),-1).permute(0,2,1)
-
-# keys = keys.unsqueeze(0).expand(x.size(0), -1, -1)
-
-
-# norm_keys = F.normalize(keys, p=2, dim=2)
-# norm_x = F.normalize(x, p=2, dim=2)
-# cos_sim = torch.matmul(norm_keys.unsqueeze(2), norm_x.transpose(1, 2).unsqueeze(1)).squeeze()
-
-# sim_vec = softmax(cos_sim)
-
-
-# values = values.unsqueeze(0).expand(x.size(0), -1, -1)
-# Fnorm=torch.matmul(sim_vec.permute(0,2,1), values)
-# Fr=Fnorm.permute(0,2,1).view(16,128,h,w)
-# print(Fr.shape)
 
 

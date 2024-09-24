@@ -3,7 +3,7 @@ from torch import Tensor
 import torch.nn as nn
 from typing import Type, Any, Callable, Union, List, Optional
 from models.RememberingNormality.memoryModule import memoryModule
-from models.RememberingNormality.utilsResnet import conv3x3, conv1x1, BasicBlock, Bottleneck
+from models.RememberingNormality.utilsResnet import conv1x1, BasicBlock, Bottleneck
 
 class ResNet(nn.Module):
 

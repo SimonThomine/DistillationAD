@@ -22,7 +22,7 @@ To use the project, you must configure the config.yaml file
 This file allows configuring the main elements of the project.
 
 - `data_path` (STR): The path to the dataset
-- `distillType` (STR): The type of distillation : st for STPM, rd for reverse distillation, ead for EfficientAD, dbfad for distillation-based fabric anomaly detection, mixed for mixedTeacher, rnst/rnrd for remembering normality (forward/backward)
+- `distillType` (STR): The type of distillation : st for STPM, rd for reverse distillation, ead for EfficientAD, dbfad for distillation-based fabric anomaly detection, mixed for mixedTeacher, rnst/rnrd for remembering normality (forward/backward), sn for singlenet
 - `backbone` (STR): The name of the model backbone (any CNN for st, only resnets and wide resnets for rd, small or medium for ead)
 - `out_indice` (LIST OF INT): The index of the layer used for distillation (only for st)
 - `obj` (STR): The object category
@@ -87,6 +87,11 @@ python3 visualization.py
   <img width="700" height="350" src="images/RememberingNormality.png">
 </p>
 
+## SingleNet Single-Layer Distillation with Fourier Convolutions for Texture Anomaly Detection 
+WACV 2025, article not published yet
+<p align="left">
+  <img width="700" height="350" src="images/SingleNet.png">
+</p>
 
 # Implemented tools
 

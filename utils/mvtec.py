@@ -8,19 +8,21 @@ import glob
 
 class MVTecDataset(Dataset):
 
-    def __init__(self, root_dir, resize_shape=None,crop_size=None,phase="train"):
-        self.root_dir = root_dir
+    def __init__(self, root_dir, resize_shape=224,crop_size=224,phase="train"):
         
-        image_extensions = ['png', 'tif', 'tiff', 'jpg', 'jpeg']
-        pattern = f"{root_dir}/*/*" + '/'.join(f"*.{ext}" for ext in image_extensions)
-
+        assert isinstance(root_dir, str), "root_dir must be a string"
+        assert isinstance(resize_shape, int), "resize_shape must be an integer"
+        assert isinstance(crop_size, int), "crop_size must be an integer"
+        
+        
+        self.root_dir = root_dir
         self.images = sorted(glob.glob(root_dir+"/*/*.png"))
 
         self.image_paths = sorted(glob.glob(root_dir+"/*.png"))
 
-        self.resize_shape=resize_shape
-        if (crop_size==None):
-            crop_size=resize_shape[0]
+        self.size=resize_shape
+        self.crop_size=crop_size
+        
         self.transform=T.Compose([T.CenterCrop(crop_size),T.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])])
         self.phase=phase
         
@@ -35,8 +37,7 @@ class MVTecDataset(Dataset):
         
         image = cv2.imread(image_path, cv2.IMREAD_COLOR)
         
-        if self.resize_shape != None:
-            image = cv2.resize(image, dsize=(self.resize_shape[1], self.resize_shape[0]))
+        image = cv2.resize(image, dsize=(self.size, self.size))
             
         image = np.array(image).reshape((image.shape[0], image.shape[1], 3)).astype(np.float32)/ 255.0
         

@@ -1,9 +1,10 @@
+import os
 import time
 import yaml
 import torch
 import random
 import numpy as np
-
+from sklearn.metrics import roc_auc_score
 
 
 class AverageMeter(object):
@@ -63,3 +64,25 @@ def denormalization(x):
     x = (((x.transpose(1, 2, 0) * std) + mean) * 255.0).astype(np.uint8) # was transpose
 
     return x
+
+
+def computeAUROC(scores,gt_list,obj,name="base"):
+    max_anomaly_score = scores.max()
+    min_anomaly_score = scores.min()
+    scores = (scores - min_anomaly_score) / (max_anomaly_score - min_anomaly_score)
+    img_scores = scores.reshape(scores.shape[0], -1).max(axis=1)
+    img_roc_auc = roc_auc_score(gt_list, img_scores)
+    print(obj + " image"+str(name)+" ROCAUC: %.3f" % (img_roc_auc))
+    return img_roc_auc,img_scores  
+
+
+def loadWeights(model,model_dir,alias):
+    try:
+        checkpoint = torch.load(os.path.join(model_dir, alias),weights_only=False)
+    except Exception:
+        raise Exception("Check saved model path.")
+    model.load_state_dict(checkpoint["model"])
+    model.eval() 
+    for param in model.parameters():
+        param.requires_grad = False
+    return model

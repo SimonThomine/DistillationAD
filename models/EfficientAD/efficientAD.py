@@ -1,5 +1,5 @@
 import torch
-from models.EfficientAD.common import get_pdn_small,get_pdn_medium,get_autoencoder
+from models.EfficientAD.common import get_pdn_small,get_pdn_medium
 
 def loadPdnTeacher(trainer): 
     if trainer.modelName=="small":
@@ -10,7 +10,7 @@ def loadPdnTeacher(trainer):
         weights="models/EfficientAD/TeacherWeights/teacher_medium.pth"
     else:
         raise Exception("Invalid pdn model :  Choices are ['small', 'medium']")
-    state_dict = torch.load(weights, map_location='cpu')
+    state_dict = torch.load(weights, map_location='cpu',weights_only=False)
     trainer.teacher.load_state_dict(state_dict)
 
     
