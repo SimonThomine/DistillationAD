@@ -1,7 +1,8 @@
 import os
 import torch
 from models.trainer_base import BaseTrainer
-from models.RememberingNormality.RD.teacherRD import resnetTeacherRD
+from models.RememberingNormality.RD.bn import bn_rd
+from models.teacher import teacherTimm
 from models.RememberingNormality.RD.de_resnetRM import de_resnetMemory
 from utils.functions import cal_loss_cosine,cal_loss,cal_loss_orth
 from utils.util import loadWeights
@@ -16,15 +17,12 @@ class RnrdTrainer(BaseTrainer):
         self.optimizer = torch.optim.Adam(list(self.student.parameters())+list(self.bn.parameters()), lr=self.lr, betas=(0.5, 0.999)) 
 
     def load_model(self):
-        self.teacher,self.bn=resnetTeacherRD(backbone_name=self.modelName)
-        self.teacher=self.teacher.to(self.device)
-        self.bn=self.bn.to(self.device)
+        self.teacher=teacherTimm(backbone_name=self.modelName,out_indices=[1,2,3,4]).to(self.device)
+        self.bn=bn_rd(backbone_name=self.modelName).to(self.device)
         self.student=de_resnetMemory(backbone_name=self.modelName,embedDim=self.embedDim).to(self.device)
     
     def load_iter(self):
         self.data_iter = iter(self.train_loader)
-      
-      
       
     def change_mode(self, period="train"):
       if period == "train":
@@ -45,13 +43,10 @@ class RnrdTrainer(BaseTrainer):
 
     def infer(self,image,test=False):
         if not test:
-            features_t_examplar = self.teacher(self.imageExamplar)
-            features_t_examplar = [features_t_examplar[1],features_t_examplar[2],features_t_examplar[3]]
-            
+            _,*features_t_examplar = self.teacher(self.imageExamplar)            
             features_t_examplar_norm=[self.student.memory2(features_t_examplar[0]),
                                     self.student.memory1(features_t_examplar[1]),
                                     self.student.memory0(features_t_examplar[2])]
-            
             features_t = self.teacher(image)
             features_t= [features_t[0],features_t[1],features_t[2]]
             embed=self.bn(features_t)

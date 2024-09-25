@@ -3,7 +3,18 @@ from torch import Tensor
 import torch.nn as nn
 from typing import Type, Any, Callable, Union, List, Optional
 from models.RememberingNormality.memoryModule import memoryModule
-from models.RememberingNormality.utilsResnet import deconv2x2, deBasicBlock, deBottleneck
+from models.RememberingNormality.utilsResnet import deconv2x2, deBasicBlock, deBottleneck, init_weights
+
+
+resnet_layers = {
+    "resnet18": [2, 2, 2, 2],
+    "resnet34": [3, 4, 6, 3],
+    "resnet50": [3, 4, 6, 3],
+    "resnet101": [3, 4, 23, 3],
+    "resnet152": [3, 8, 36, 3],
+    "wide_resnet50_2": [3, 4, 6, 3],
+    "wide_resnet101_2": [3, 4, 23, 3]
+    }
 
 
 class ResNet(nn.Module):
@@ -13,7 +24,6 @@ class ResNet(nn.Module):
         block: Type[Union[deBasicBlock, deBottleneck]],
         layers: List[int],
         embedDim: int,
-        zero_init_residual: bool = False,
         groups: int = 1,
         width_per_group: int = 64,
         replace_stride_with_dilation: Optional[List[bool]] = None,
@@ -49,19 +59,14 @@ class ResNet(nn.Module):
             self.memory1 = memoryModule(L=embedDim,channel=1024)
             self.memory2=  memoryModule(L=embedDim,channel=512)
 
+        init_weights(self)
+        
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
             elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
-
-        if zero_init_residual:
-            for m in self.modules():
-                if isinstance(m, deBottleneck):
-                    nn.init.constant_(m.bn3.weight, 0)  # type: ignore[arg-type]
-                elif isinstance(m, deBasicBlock):
-                    nn.init.constant_(m.bn2.weight, 0)  # type: ignore[arg-type]
 
     def _make_layer(self, block: Type[Union[deBasicBlock, deBottleneck]], planes: int, blocks: int,
                     stride: int = 1, dilate: bool = False) -> nn.Sequential:
@@ -110,76 +115,19 @@ class ResNet(nn.Module):
         return self._forward_impl(x)
 
 
-def _resnet(
-    block: Type[Union[deBasicBlock, deBottleneck]],
-    layers: List[int],
-    embedDim: int,
-    **kwargs: Any
-) -> ResNet:
+def _resnet(block: Type[Union[deBasicBlock, deBottleneck]],layers: List[int],embedDim: int,**kwargs: Any) -> ResNet:
     model = ResNet(block, layers,embedDim, **kwargs)
     return model
 
 
-def de_resnet18(embedDim=50, **kwargs: Any) -> ResNet:
-    return _resnet(deBasicBlock, [2, 2, 2, 2],embedDim,**kwargs)
-
-
-def de_resnet34(embedDim=50, **kwargs: Any) -> ResNet:
-    return _resnet(deBasicBlock, [3, 4, 6, 3],embedDim,**kwargs)
-
-
-def de_resnet50(embedDim=50, **kwargs: Any) -> ResNet:
-    return _resnet(deBottleneck, [3, 4, 6, 3],embedDim,**kwargs)
-
-
-def de_resnet101(embedDim=50, **kwargs: Any) -> ResNet:
-    return _resnet(deBottleneck, [3, 4, 23, 3],embedDim,**kwargs)
-
-
-def de_resnet152(embedDim=50, **kwargs: Any) -> ResNet:
-    return _resnet(deBottleneck, [3, 8, 36, 3],embedDim,**kwargs)
-
-
-def de_resnext50_32x4d(embedDim=50, **kwargs: Any) -> ResNet:
-    kwargs['groups'] = 32
-    kwargs['width_per_group'] = 4
-    return _resnet(deBottleneck, [3, 4, 6, 3],embedDim,**kwargs)
-
-
-def de_resnext101_32x8d(embedDim=50, **kwargs: Any) -> ResNet:
-    kwargs['groups'] = 32
-    kwargs['width_per_group'] = 8
-    return _resnet(deBottleneck, [3, 4, 23, 3],embedDim,**kwargs)
-
-
-def de_wide_resnet50_2(embedDim=50, **kwargs: Any) -> ResNet:
-    kwargs['width_per_group'] = 64 * 2
-    return _resnet(deBottleneck, [3, 4, 6, 3],embedDim,**kwargs)
-
-
-def de_wide_resnet101_2(embedDim=50, **kwargs: Any) -> ResNet:
-    kwargs['width_per_group'] = 64 * 2
-    return _resnet(deBottleneck, [3, 4, 23, 3],embedDim, **kwargs)
-
-
-def de_resnetMemory(backbone_name,embedDim=50):
-    if backbone_name=="resnet18":
-        return de_resnet18(embedDim)
-    if backbone_name=="resnet34":
-        return de_resnet34(embedDim)
-    if backbone_name=="resnet50":
-        return de_resnet50(embedDim)
-    if backbone_name=="resnet101":
-        return de_resnet101(embedDim)
-    if backbone_name=="resnet152":
-        return de_resnet152(embedDim)
-    if backbone_name=="resnext50_32x4d":
-        return de_resnext50_32x4d(embedDim)
-    if backbone_name=="resnext101_32x8d":
-        return de_resnext101_32x8d(embedDim)
-    if backbone_name=="wide_resnet50_2":
-        return de_wide_resnet50_2(embedDim)
-    if backbone_name=="wide_resnet101_2":
-        return de_wide_resnet101_2(embedDim)
+def de_resnetMemory(backbone_name,embedDim=50,**kwargs):
+    if backbone_name=="resnet18" or backbone_name=="resnet34":
+        return _resnet(deBasicBlock, resnet_layers[backbone_name],embedDim)
+    elif backbone_name=="resnet50" or backbone_name=="resnet101" or backbone_name=="resnet152":
+        return _resnet(deBottleneck, resnet_layers[backbone_name],embedDim)
+    elif backbone_name=="wide_resnet50_2" or backbone_name=="wide_resnet101_2":
+        kwargs['width_per_group'] = 64 * 2
+        return _resnet(deBottleneck, resnet_layers[backbone_name],embedDim,**kwargs)
     else:
-        raise Exception("Invalid model name :  Choices are ['resnet18', 'resnet34','resnet50', 'resnet101', 'resnet152', 'resnext50_32x4d', 'resnext101_32x8d', 'wide_resnet50_2', 'wide_resnet101_2']")
+        raise Exception("Invalid model name :  Choices are ['resnet18', 'resnet34','resnet50', \
+                        'resnet101', 'resnet152', 'wide_resnet50_2', 'wide_resnet101_2']")

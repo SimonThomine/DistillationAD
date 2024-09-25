@@ -3,17 +3,25 @@ from torch import Tensor
 import torch.nn as nn
 from typing import Type, Any, Callable, Union, List, Optional
 from models.RememberingNormality.memoryModule import memoryModule
-from models.RememberingNormality.utilsResnet import conv1x1, BasicBlock, Bottleneck
+from models.RememberingNormality.utilsResnet import conv1x1, BasicBlock, Bottleneck,init_weights
+
+
+resnet_layers = {
+    "resnet18": [2, 2, 2, 2],
+    "resnet34": [3, 4, 6, 3],
+    "resnet50": [3, 4, 6, 3],
+    "resnet101": [3, 4, 23, 3],
+    "resnet152": [3, 8, 36, 3],
+    "wide_resnet50_2": [3, 4, 6, 3],
+    "wide_resnet101_2": [3, 4, 23, 3]
+    }
 
 class ResNet(nn.Module):
-
     def __init__(
         self,
         block: Type[Union[BasicBlock, Bottleneck]],
         layers: List[int],
         embedDim: int,
-        num_classes: int = 1000,
-        zero_init_residual: bool = False,
         groups: int = 1,
         width_per_group: int = 64,
         replace_stride_with_dilation: Optional[List[bool]] = None,
@@ -47,25 +55,12 @@ class ResNet(nn.Module):
                 
         if (block==BasicBlock):
             self.memory1 = memoryModule(L=embedDim,channel=64)
-            self.memory2=  memoryModule(L=embedDim,channel=128)
+            self.memory2 = memoryModule(L=embedDim,channel=128)
         else :
             self.memory1 = memoryModule(L=embedDim,channel=256)
-            self.memory2=  memoryModule(L=embedDim,channel=512)
-        
-
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
+            self.memory2 = memoryModule(L=embedDim,channel=512)
                 
-        if zero_init_residual:
-            for m in self.modules():
-                if isinstance(m, Bottleneck):
-                    nn.init.constant_(m.bn3.weight, 0)  # type: ignore[arg-type]
-                elif isinstance(m, BasicBlock):
-                    nn.init.constant_(m.bn2.weight, 0)  # type: ignore[arg-type]
+        init_weights(self)  
 
     def _make_layer(self, block: Type[Union[BasicBlock, Bottleneck]], planes: int, blocks: int,
                     stride: int = 1, dilate: bool = False,firstLayer: bool = False) -> nn.Sequential:
@@ -103,7 +98,6 @@ class ResNet(nn.Module):
         x = self.relu(x)
         x = self.maxpool(x)
         
-
         feature_a = self.layer1(x) 
         feature_mem_a = self.memory1(feature_a)
         feature_a_cat=torch.cat((feature_a,feature_mem_a),1)
@@ -121,138 +115,18 @@ class ResNet(nn.Module):
         return self._forward_impl(x)
 
 
-def _resnet(
-    block: Type[Union[BasicBlock, Bottleneck]],
-    layers: List[int],
-    embedDim: int,
-    **kwargs: Any
-) -> ResNet:
+def _resnet(block: Type[Union[BasicBlock, Bottleneck]],layers: List[int],embedDim: int,**kwargs: Any) -> ResNet:
     model = ResNet(block, layers,embedDim, **kwargs)
     return model
 
-
-def resnet18Memory(embedDim=50,**kwargs: Any) -> ResNet:
-    r"""ResNet-18 model from
-    `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    return _resnet(BasicBlock, [2, 2, 2, 2],embedDim,**kwargs)
-
-
-def resnet34Memory(embedDim=50, **kwargs: Any) -> ResNet:
-    r"""ResNet-34 model from
-    `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    return _resnet(BasicBlock, [3, 4, 6, 3],embedDim,**kwargs)
-
-
-def resnet50Memory(embedDim=50,**kwargs: Any) -> ResNet:
-    r"""ResNet-50 model from
-    `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    return _resnet(Bottleneck, [3, 4, 6, 3],embedDim,**kwargs)
-
-
-def resnet101Memory(embedDim=50,**kwargs: Any) -> ResNet:
-    r"""ResNet-101 model from
-    `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    return _resnet(Bottleneck, [3, 4, 23, 3],embedDim,**kwargs)
-
-
-def resnet152Memory(embedDim=50,**kwargs: Any) -> ResNet:
-    r"""ResNet-152 model from
-    `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    return _resnet(Bottleneck, [3, 8, 36, 3],embedDim,**kwargs)
-
-
-def resnext50_32x4dMemory(embedDim=50,**kwargs: Any) -> ResNet:
-    r"""ResNeXt-50 32x4d model from
-    `"Aggregated Residual Transformation for Deep Neural Networks" <https://arxiv.org/pdf/1611.05431.pdf>`_.
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    kwargs['groups'] = 32
-    kwargs['width_per_group'] = 4
-    return _resnet(Bottleneck, [3, 4, 6, 3],embedDim,**kwargs)
-
-
-def resnext101_32x8dMemory(embedDim=50,**kwargs: Any) -> ResNet:
-    r"""ResNeXt-101 32x8d model from
-    `"Aggregated Residual Transformation for Deep Neural Networks" <https://arxiv.org/pdf/1611.05431.pdf>`_.
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    kwargs['groups'] = 32
-    kwargs['width_per_group'] = 8
-    return _resnet(Bottleneck, [3, 4, 23, 3],embedDim, **kwargs)
-
-
-def wide_resnet50_2Memory(embedDim=50,**kwargs: Any) -> ResNet:
-    r"""Wide ResNet-50-2 model from
-    `"Wide Residual Networks" <https://arxiv.org/pdf/1605.07146.pdf>`_.
-    The model is the same as ResNet except for the bottleneck number of channels
-    which is twice larger in every block. The number of channels in outer 1x1
-    convolutions is the same, e.g. last block in ResNet-50 has 2048-512-2048
-    channels, and in Wide ResNet-50-2 has 2048-1024-2048.
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    kwargs['width_per_group'] = 64 * 2
-    return _resnet(Bottleneck, [3, 4, 6, 3],embedDim,**kwargs)
-
-
-def wide_resnet101_2Memory(embedDim=50,**kwargs: Any) -> ResNet:
-    r"""Wide ResNet-101-2 model from
-    `"Wide Residual Networks" <https://arxiv.org/pdf/1605.07146.pdf>`_.
-    The model is the same as ResNet except for the bottleneck number of channels
-    which is twice larger in every block. The number of channels in outer 1x1
-    convolutions is the same, e.g. last block in ResNet-50 has 2048-512-2048
-    channels, and in Wide ResNet-50-2 has 2048-1024-2048.
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    kwargs['width_per_group'] = 64 * 2
-    return _resnet(Bottleneck, [3, 4, 23, 3],embedDim,**kwargs)
-
-
-def resnetMemory(backbone_name,embedDim=50):
-    if backbone_name=="resnet18":
-        return resnet18Memory(embedDim)
-    if backbone_name=="resnet34":
-        return resnet34Memory(embedDim)
-    if backbone_name=="resnet50":
-        return resnet50Memory(embedDim)
-    if backbone_name=="resnet101":
-        return resnet101Memory(embedDim)
-    if backbone_name=="resnet152":
-        return resnet152Memory(embedDim)
-    if backbone_name=="resnext50_32x4d":
-        return resnext50_32x4dMemory(embedDim)
-    if backbone_name=="resnext101_32x8d":
-        return resnext101_32x8dMemory(embedDim)
-    if backbone_name=="wide_resnet50_2":
-        return wide_resnet50_2Memory(embedDim)
-    if backbone_name=="wide_resnet101_2":
-        return wide_resnet101_2Memory(embedDim)
+def resnetMemory(backbone_name,embedDim=50,**kwargs):
+    if backbone_name=="resnet18" or backbone_name=="resnet34":
+        return _resnet(BasicBlock, resnet_layers[backbone_name],embedDim)
+    elif backbone_name=="resnet50" or backbone_name=="resnet101" or backbone_name=="resnet152":
+        return _resnet(Bottleneck, resnet_layers[backbone_name],embedDim)
+    elif backbone_name=="wide_resnet50_2" or backbone_name=="wide_resnet101_2":
+        kwargs['width_per_group'] = 64 * 2
+        return _resnet(Bottleneck, resnet_layers[backbone_name],embedDim,**kwargs)
     else:
-        raise Exception("Invalid model name :  Choices are ['resnet18', 'resnet34','resnet50', 'resnet101', 'resnet152', 'resnext50_32x4d', 'resnext101_32x8d', 'wide_resnet50_2', 'wide_resnet101_2']")
+        raise Exception("Invalid model name :  Choices are ['resnet18', 'resnet34','resnet50', 'resnet101',\
+                        'resnet152', 'wide_resnet50_2', 'wide_resnet101_2']")

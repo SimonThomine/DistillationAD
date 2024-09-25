@@ -4,6 +4,9 @@ backbone: resnet18 # any resnet model
 obj: wood
 phase: train
 save_path: "./results"
+embedDim: 50 # L in paper
+lambda1: 0.1
+lambda2: 0.1
 TrainingData:
   epochs: 50
   batch_size: 8
@@ -11,8 +14,3 @@ TrainingData:
   img_size: 224
   crop_size: 224
   norm: True # normalize features before loss calculation
-  
-  # Specific to RM
-  embedDim: 50 # L in paper
-  lambda1: 0.1
-  lambda2: 0.1

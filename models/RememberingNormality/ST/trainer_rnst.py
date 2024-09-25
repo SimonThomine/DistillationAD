@@ -1,7 +1,7 @@
 import os
 import torch
 from models.trainer_base import BaseTrainer
-from models.RememberingNormality.ST.teacherST import resnetTeacherST
+from models.teacher import teacherTimm
 from models.RememberingNormality.ST.resnetRM import resnetMemory
 from utils.functions import cal_loss_cosine,cal_loss,cal_loss_orth
 from utils.util import loadWeights
@@ -17,7 +17,7 @@ class RnstTrainer(BaseTrainer):
         self.optimizer = torch.optim.Adam(self.student.parameters(), lr=self.lr, betas=(0.5, 0.999)) 
 
     def load_model(self):
-        self.teacher=resnetTeacherST(backbone_name=self.modelName).to(self.device)
+        self.teacher=teacherTimm(backbone_name=self.modelName,out_indices=[1,2,3]).to(self.device)
         self.student=resnetMemory(backbone_name=self.modelName,embedDim=self.embedDim).to(self.device)
         
         
@@ -42,10 +42,8 @@ class RnstTrainer(BaseTrainer):
 
     def infer(self,image,test=False):
         if (not test):
-            features_t_examplar = self.teacher.forward_normality_embedding(self.imageExamplar)
-            features_t_examplar = [features_t_examplar[1],features_t_examplar[2]]
-            features_t_examplar_norm=[self.student.memory1(features_t_examplar[0]),
-                                    self.student.memory2(features_t_examplar[1])]
+            *features_t_examplar,_ = self.teacher(self.imageExamplar)
+            features_t_examplar_norm=[self.student.memory1(features_t_examplar[0]),self.student.memory2(features_t_examplar[1])]
             features_t = self.teacher(image)
             features_s=self.student(image)
             self.features_t_examplar=features_t_examplar
