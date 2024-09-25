@@ -2,7 +2,7 @@ import torch
 from torch import Tensor
 import torch.nn as nn
 from typing import Type, Any, Callable, Union, Optional
-from models.RememberingNormality.utilsResnet import conv3x3, conv1x1, BasicBlock, Bottleneck, AttnBasicBlock, AttnBottleneck,init_weights
+from models.utilsResnet import conv3x3, conv1x1, BasicBlock, Bottleneck, AttnBasicBlock, AttnBottleneck,init_weights
 
 class BN_layer(nn.Module):
     def __init__(self,

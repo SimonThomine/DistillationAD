@@ -3,21 +3,9 @@ from torch import Tensor
 import torch.nn as nn
 from typing import Type, Any, Callable, Union, List, Optional
 from models.RememberingNormality.memoryModule import memoryModule
-from models.RememberingNormality.utilsResnet import deconv2x2, deBasicBlock, deBottleneck, init_weights
+from models.utilsResnet import deconv2x2, deBasicBlock, deBottleneck, init_weights,RESNET_LAYERS
 
-
-resnet_layers = {
-    "resnet18": [2, 2, 2, 2],
-    "resnet34": [3, 4, 6, 3],
-    "resnet50": [3, 4, 6, 3],
-    "resnet101": [3, 4, 23, 3],
-    "resnet152": [3, 8, 36, 3],
-    "wide_resnet50_2": [3, 4, 6, 3],
-    "wide_resnet101_2": [3, 4, 23, 3]
-    }
-
-
-class ResNet(nn.Module):
+class deResNet(nn.Module):
 
     def __init__(
         self,
@@ -29,7 +17,7 @@ class ResNet(nn.Module):
         replace_stride_with_dilation: Optional[List[bool]] = None,
         norm_layer: Optional[Callable[..., nn.Module]] = None
     ) -> None:
-        super(ResNet, self).__init__()
+        super(deResNet, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         self._norm_layer = norm_layer
@@ -60,13 +48,7 @@ class ResNet(nn.Module):
             self.memory2=  memoryModule(L=embedDim,channel=512)
 
         init_weights(self)
-        
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
+    
 
     def _make_layer(self, block: Type[Union[deBasicBlock, deBottleneck]], planes: int, blocks: int,
                     stride: int = 1, dilate: bool = False) -> nn.Sequential:
@@ -115,19 +97,19 @@ class ResNet(nn.Module):
         return self._forward_impl(x)
 
 
-def _resnet(block: Type[Union[deBasicBlock, deBottleneck]],layers: List[int],embedDim: int,**kwargs: Any) -> ResNet:
-    model = ResNet(block, layers,embedDim, **kwargs)
+def _deresnet(block: Type[Union[deBasicBlock, deBottleneck]],layers: List[int],embedDim: int,**kwargs: Any) -> deResNet:
+    model = deResNet(block, layers,embedDim, **kwargs)
     return model
 
 
 def de_resnetMemory(backbone_name,embedDim=50,**kwargs):
     if backbone_name=="resnet18" or backbone_name=="resnet34":
-        return _resnet(deBasicBlock, resnet_layers[backbone_name],embedDim)
+        return _deresnet(deBasicBlock, RESNET_LAYERS[backbone_name],embedDim)
     elif backbone_name=="resnet50" or backbone_name=="resnet101" or backbone_name=="resnet152":
-        return _resnet(deBottleneck, resnet_layers[backbone_name],embedDim)
+        return _deresnet(deBottleneck, RESNET_LAYERS[backbone_name],embedDim)
     elif backbone_name=="wide_resnet50_2" or backbone_name=="wide_resnet101_2":
         kwargs['width_per_group'] = 64 * 2
-        return _resnet(deBottleneck, resnet_layers[backbone_name],embedDim,**kwargs)
+        return _deresnet(deBottleneck, RESNET_LAYERS[backbone_name],embedDim,**kwargs)
     else:
         raise Exception("Invalid model name :  Choices are ['resnet18', 'resnet34','resnet50', \
                         'resnet101', 'resnet152', 'wide_resnet50_2', 'wide_resnet101_2']")

@@ -3,18 +3,7 @@ from torch import Tensor
 import torch.nn as nn
 from typing import Type, Any, Callable, Union, List, Optional
 from models.RememberingNormality.memoryModule import memoryModule
-from models.RememberingNormality.utilsResnet import conv1x1, BasicBlock, Bottleneck,init_weights
-
-
-resnet_layers = {
-    "resnet18": [2, 2, 2, 2],
-    "resnet34": [3, 4, 6, 3],
-    "resnet50": [3, 4, 6, 3],
-    "resnet101": [3, 4, 23, 3],
-    "resnet152": [3, 8, 36, 3],
-    "wide_resnet50_2": [3, 4, 6, 3],
-    "wide_resnet101_2": [3, 4, 23, 3]
-    }
+from models.utilsResnet import conv1x1, BasicBlock, Bottleneck,init_weights,RESNET_LAYERS
 
 class ResNet(nn.Module):
     def __init__(
@@ -121,12 +110,12 @@ def _resnet(block: Type[Union[BasicBlock, Bottleneck]],layers: List[int],embedDi
 
 def resnetMemory(backbone_name,embedDim=50,**kwargs):
     if backbone_name=="resnet18" or backbone_name=="resnet34":
-        return _resnet(BasicBlock, resnet_layers[backbone_name],embedDim)
+        return _resnet(BasicBlock, RESNET_LAYERS[backbone_name],embedDim)
     elif backbone_name=="resnet50" or backbone_name=="resnet101" or backbone_name=="resnet152":
-        return _resnet(Bottleneck, resnet_layers[backbone_name],embedDim)
+        return _resnet(Bottleneck, RESNET_LAYERS[backbone_name],embedDim)
     elif backbone_name=="wide_resnet50_2" or backbone_name=="wide_resnet101_2":
         kwargs['width_per_group'] = 64 * 2
-        return _resnet(Bottleneck, resnet_layers[backbone_name],embedDim,**kwargs)
+        return _resnet(Bottleneck, RESNET_LAYERS[backbone_name],embedDim,**kwargs)
     else:
         raise Exception("Invalid model name :  Choices are ['resnet18', 'resnet34','resnet50', 'resnet101',\
                         'resnet152', 'wide_resnet50_2', 'wide_resnet101_2']")

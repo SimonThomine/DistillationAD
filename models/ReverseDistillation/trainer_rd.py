@@ -2,7 +2,8 @@ import os
 import torch
 from models.trainer_base import BaseTrainer
 from models.teacher import teacherTimm
-from models.ReverseDistillation.rd import loadBottleNeckRD,loadStudentRD
+from models.ReverseDistillation.de_resnet import de_resnet
+from models.ReverseDistillation.bn import bn_rd
 from utils.functions import cal_loss
 from utils.util import loadWeights
 
@@ -10,16 +11,14 @@ class RdTrainer(BaseTrainer):
     def __init__(self, data, device):
         super().__init__(data, device)
         
-        
-        
     def load_optim(self):
         self.optimizer = torch.optim.Adam(list(self.student.parameters())+list(self.bn.parameters()), lr=self.lr, betas=(0.5, 0.999)) 
 
 
     def load_model(self):
         self.teacher=teacherTimm(backbone_name=self.modelName,out_indices=[1,2,3]).to(self.device)
-        loadBottleNeckRD(self)
-        loadStudentRD(self)
+        self.bn=bn_rd(backbone_name=self.modelName).to(self.device)
+        self.student=de_resnet(backbone_name=self.modelName).to(self.device)
         
         
     def change_mode(self, period="train"):

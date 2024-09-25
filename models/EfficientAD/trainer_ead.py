@@ -20,6 +20,7 @@ class EadTrainer(BaseTrainer):
             self.student = get_pdn_small().to(self.device) 
         if self.modelName=="medium" : 
             self.student = get_pdn_medium().to(self.device)
+            
 
     def change_mode(self, period="train"):
       if period == "train":
