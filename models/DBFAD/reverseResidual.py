@@ -1,14 +1,7 @@
 import torch.nn as nn
-from torch.nn import ConvTranspose2d 
-from models.DBFAD.utilsModel import  conv3BnRelu, conv1BnRelu, Attention, Attention2, BasicBlockDe
+from models.DBFAD.utilsModel import  conv3BnRelu, conv1BnRelu, Attention, Attention2, BasicBlockDe,deconv2x2
 from models.sspcab import SSPCAB
-
-
-
-def deconv2x2(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1) -> ConvTranspose2d:
-    """1x1 convolution"""
-    return nn.ConvTranspose2d(in_planes, out_planes, kernel_size=2, stride=stride,
-                              groups=groups, bias=False, dilation=dilation)
+from models.utilsResnet import init_weights
 
 
 class ReverseStudent(nn.Module):
@@ -71,13 +64,7 @@ class ReverseStudent(nn.Module):
         self.layer2 = self._make_layer(block, 64, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 64, layers[2])
 
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(
-                    m.weight, mode='fan_out', nonlinearity='relu')
-            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
+        init_weights(self)
 
 
     def _make_layer(self, block: BasicBlockDe, planes: int, blocks: int,

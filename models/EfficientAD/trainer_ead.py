@@ -2,7 +2,7 @@ import os
 import torch
 from models.trainer_base import BaseTrainer
 from models.EfficientAD.efficientAD import loadPdnTeacher
-from models.EfficientAD.common import get_pdn_small,get_pdn_medium
+from models.EfficientAD.efficientAD import get_pdn_small,get_pdn_medium
 from utils.functions import cal_loss_quantile
 from utils.util import loadWeights
 

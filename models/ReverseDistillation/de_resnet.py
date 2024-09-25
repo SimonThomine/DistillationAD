@@ -68,7 +68,6 @@ class deResNet(nn.Module):
         feature_a = self.layer1(x)  # 512*8*8->256*16*16
         feature_b = self.layer2(feature_a)  # 256*16*16->128*32*32
         feature_c = self.layer3(feature_b)  # 128*32*32->64*64*64
-        #feature_d = self.layer4(feature_c)  # 64*64*64->128*32*32
 
         return [feature_c, feature_b, feature_a]
 
