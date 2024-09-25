@@ -1,6 +1,5 @@
 import torch.nn as nn
 from models.SingleNet.ffc import FFC_BN_ACT
-from models.SingleNet.ffcT import FFC_T_BN_ACT
 
 
 class singleNet(nn.Module):
@@ -11,10 +10,10 @@ class singleNet(nn.Module):
         self.context=nn.Sequential(
                     FFC_BN_ACT(inputsFilters, inputsFilters, kernel_size=3, ratio_gin=0, ratio_gout=0.5, stride=1, 
                                padding=1, bias=False,activation_layer=nn.LeakyReLU,momentumbs=0.01),
-                    FFC_T_BN_ACT(inputsFilters, inputsFilters, kernel_size=4, ratio_gin=0.5, ratio_gout=0.5, stride=2,
-                                 padding=1, bias=False,activation_layer=nn.LeakyReLU,momentumbs=0.01),
-                    FFC_T_BN_ACT(inputsFilters, inputsFilters, kernel_size=4, ratio_gin=0.5, ratio_gout=0, stride=2,
-                                 padding=1, bias=False,activation_layer=nn.LeakyReLU,momentumbs=0.01)
+                    FFC_BN_ACT(inputsFilters, inputsFilters, kernel_size=4, ratio_gin=0.5, ratio_gout=0.5, stride=2,
+                                 padding=1, bias=False,activation_layer=nn.LeakyReLU,momentumbs=0.01,transposed=True),
+                    FFC_BN_ACT(inputsFilters, inputsFilters, kernel_size=4, ratio_gin=0.5, ratio_gout=0, stride=2,
+                                 padding=1, bias=False,activation_layer=nn.LeakyReLU,momentumbs=0.01,transposed=True)
         )
 
     def forward(self, features): 
