@@ -35,13 +35,9 @@ An example of config for each distillType is accessible in `configs/`
 ### Training and testing
 Once configured, just do the following command to train or test (depending of configuration file)
 ```
-python3 trainNet.py
+python3 train.py
 ```
 
-You can also visualize the feature map of a given layer, you may change the selected layer within the python file
-```
-python3 visualization.py
-```
 
 # Implemented methods
 
